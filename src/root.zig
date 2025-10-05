@@ -7,7 +7,12 @@ const assert = std.debug.assert;
 const builtin = @import("builtin");
 const isSafeBuildTarget: bool = builtin.mode == .ReleaseSafe or builtin.mode == .Debug;
 
-const c = @import("c");
+// const c = @import("c");
+const c = @cImport({
+    @cInclude("lua.h");
+    @cInclude("lualib.h");
+    @cInclude("lauxlib.h");
+});
 const aa = @import("allocator_adapter.zig");
 
 /// A Lua state represents the entire context of a Lua interpreter.

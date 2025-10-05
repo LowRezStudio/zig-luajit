@@ -6,24 +6,34 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const coverage = b.option(bool, "coverage", "Generate a coverage report with kcov") orelse false;
 
-    const target = b.standardTargetOptions(.{});
+    const target = b.standardTargetOptions(.{
+        .default_target = .{
+            .cpu_arch = .x86_64,
+            .os_tag = .windows,
+            .abi = .gnu,
+        },
+    });
     const optimize = b.standardOptimizeOption(.{});
-
-    const luajit_build_dep = b.dependency("luajit_build", .{ .target = target, .optimize = optimize, .link_as = .static });
-    const luajit_build = luajit_build_dep.module("luajit-build");
 
     const lib_mod = b.addModule("luajit", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
+
+    lib_mod.addIncludePath(b.path("include"));
 
     const lib = b.addLibrary(.{
         .name = "luajit",
         .linkage = .static,
         .root_module = lib_mod,
     });
-    lib.root_module.addImport("c", luajit_build);
+
+    const arch_dir = if (target.result.cpu.arch == .x86) "x86" else "x64";
+    lib.addLibraryPath(b.path(b.fmt("libs/windows/{s}", .{arch_dir})));
+    lib.linkSystemLibrary("lua");
+    lib.addIncludePath(b.path("include"));
 
     b.installArtifact(lib);
 
